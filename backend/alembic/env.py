@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy import text
 
 from alembic import context
 
@@ -14,7 +15,7 @@ from app.core.config import settings
 config = context.config
 
 # Override the sqlalchemy.url with the one from settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.get_database_url())
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -69,6 +70,10 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # Create schema if it doesn't exist (for Azure PostgreSQL)
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS yoga_reserve"))
+        connection.commit()
+        
         context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
