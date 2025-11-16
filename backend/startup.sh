@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Azure Web Apps startup script for FastAPI application
+# This script runs database migrations and starts the uvicorn server
 
 echo "Starting application startup script..."
 
