@@ -22,7 +22,7 @@ try:
     if count == 0:
         print('No data found, inserting sample data...')
         import subprocess
-        subprocess.run(['python', 'scripts/create_sample_data.py'])
+        subprocess.run(['python', 'create_sample_data.py'])
     else:
         print(f'Found {count} services, skipping sample data insertion')
 finally:
