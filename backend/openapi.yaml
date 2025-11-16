@@ -1,0 +1,443 @@
+openapi: 3.0.3
+info:
+  title: Service Booking API
+  description: サービス予約システムのREST API。ヘアカットやカラーリングなどのサービスを予約・管理するためのAPIを提供します。
+  version: 1.0.0
+servers:
+  - url: http://localhost:3001
+    description: ローカル開発サーバー
+
+tags:
+  - name: 認証
+    description: 認証関連のエンドポイント
+  - name: サービス管理
+    description: サービス情報の取得
+  - name: 予約管理
+    description: 予約の作成・取得・キャンセル
+  - name: 管理者機能
+    description: 管理者専用機能
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - 認証
+      summary: ログイン
+      description: ユーザーログインを行い、アクセストークンとリフレッシュトークンを取得します。
+      operationId: login
+      responses:
+        '200':
+          description: ログイン成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    example: jwt_access_token_here
+                    description: JWTアクセストークン
+                  refresh:
+                    type: string
+                    example: jwt_refresh_token_here
+                    description: JWTリフレッシュトークン
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /auth/register:
+    post:
+      tags:
+        - 認証
+      summary: ユーザー登録
+      description: 新規ユーザーを登録します。
+      operationId: register
+      responses:
+        '201':
+          description: 登録成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/refresh:
+    post:
+      tags:
+        - 認証
+      summary: トークンリフレッシュ
+      description: リフレッシュトークンを使用して新しいアクセストークンを取得します。
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: トークンリフレッシュ成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    example: new_access_token_here
+                    description: 新しいJWTアクセストークン
+
+  /services:
+    get:
+      tags:
+        - サービス管理
+      summary: サービス一覧取得
+      description: 利用可能なサービスの一覧を取得します。
+      operationId: getServices
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: サービス一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Service'
+
+  /services/{id}:
+    get:
+      tags:
+        - サービス管理
+      summary: サービス詳細取得
+      description: 特定のサービスの詳細情報を取得します。
+      operationId: getServiceById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サービスID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: サービス詳細取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Service'
+
+  /services/{id}/slots:
+    get:
+      tags:
+        - サービス管理
+      summary: サービスの予約可能枠取得
+      description: 特定のサービスの予約可能な時間枠を取得します。
+      operationId: getServiceSlots
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サービスID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: 予約可能枠取得成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service_id:
+                    type: integer
+                    example: 1
+                    description: サービスID
+                  date:
+                    type: string
+                    format: date
+                    example: '2025-01-10'
+                    description: 予約日
+                  slots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Slot'
+
+  /bookings:
+    post:
+      tags:
+        - 予約管理
+      summary: 予約作成
+      description: 新しい予約を作成します。
+      operationId: createBooking
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: 予約作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  booking_id:
+                    type: integer
+                    example: 21
+                    description: 予約ID
+                  status:
+                    type: string
+                    example: confirmed
+                    description: 予約ステータス
+                  service_id:
+                    type: integer
+                    example: 1
+                    description: サービスID
+                  date:
+                    type: string
+                    format: date
+                    example: '2025-01-10'
+                    description: 予約日
+                  start_time:
+                    type: string
+                    example: '09:00'
+                    description: 開始時間
+
+  /bookings/mine:
+    get:
+      tags:
+        - 予約管理
+      summary: 自分の予約一覧取得
+      description: ログインユーザーの予約一覧を取得します。
+      operationId: getMyBookings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 予約一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingDetail'
+
+  /bookings/{id}:
+    delete:
+      tags:
+        - 予約管理
+      summary: 予約キャンセル
+      description: 既存の予約をキャンセルします。
+      operationId: cancelBooking
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 予約ID
+          schema:
+            type: integer
+            example: 21
+      responses:
+        '200':
+          description: 予約キャンセル成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 21
+                    description: 予約ID
+                  status:
+                    type: string
+                    example: cancelled
+                    description: 予約ステータス
+
+  /admin/login:
+    post:
+      tags:
+        - 管理者機能
+      summary: 管理者ログイン
+      description: 管理者としてログインします。
+      operationId: adminLogin
+      responses:
+        '200':
+          description: 管理者ログイン成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    example: admin_access_token_here
+                    description: 管理者用JWTアクセストークン
+                  refresh:
+                    type: string
+                    example: refresh_token_here
+                    description: JWTリフレッシュトークン
+
+  /admin/bookings:
+    get:
+      tags:
+        - 管理者機能
+      summary: 全予約一覧取得（管理者用）
+      description: すべての予約情報を取得します（管理者専用）。
+      operationId: getAllBookings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: 全予約一覧取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminBookingDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWTアクセストークンを使用した認証
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: ユーザーID
+        name:
+          type: string
+          example: 山田太郎
+          description: ユーザー名
+        email:
+          type: string
+          format: email
+          example: user@example.com
+          description: メールアドレス
+
+    Service:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: サービスID
+        name:
+          type: string
+          example: レッスン
+          description: サービス名
+        description:
+          type: string
+          example: サービス
+          description: サービス説明
+        duration:
+          type: integer
+          example: 60
+          description: 所要時間（分）
+
+    Slot:
+      type: object
+      properties:
+        start_time:
+          type: string
+          example: '09:00'
+          description: 開始時間（HH:MM形式）
+        capacity:
+          type: integer
+          example: 2
+          description: 定員
+        reserved:
+          type: integer
+          example: 1
+          description: 予約済み数
+        available:
+          type: integer
+          example: 1
+          description: 空き数
+
+    BookingDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 21
+          description: 予約ID
+        service_id:
+          type: integer
+          example: 1
+          description: サービスID
+        service_name:
+          type: string
+          example: レッスン
+          description: サービス名
+        date:
+          type: string
+          format: date
+          example: '2025-01-10'
+          description: 予約日（YYYY-MM-DD形式）
+        start_time:
+          type: string
+          example: '09:00'
+          description: 開始時間（HH:MM形式）
+        status:
+          type: string
+          enum:
+            - confirmed
+            - cancelled
+          example: confirmed
+          description: 予約ステータス
+
+    AdminBookingDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 21
+          description: 予約ID
+        service_name:
+          type: string
+          example: レッスン
+          description: サービス名
+        user_name:
+          type: string
+          example: 山田太郎
+          description: ユーザー名
+        date:
+          type: string
+          format: date
+          example: '2025-01-10'
+          description: 予約日（YYYY-MM-DD形式）
+        start_time:
+          type: string
+          example: '09:00'
+          description: 開始時間（HH:MM形式）
+        status:
+          type: string
+          enum:
+            - confirmed
+            - cancelled
+          example: confirmed
+          description: 予約ステータス
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: エラーメッセージ
+        code:
+          type: string
+          description: エラーコード
+        status:
+          type: integer
+          description: HTTPステータスコード
