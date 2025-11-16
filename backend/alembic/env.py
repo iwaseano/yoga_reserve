@@ -73,7 +73,7 @@ def run_migrations_online() -> None:
         # Create schema if it doesn't exist (for Azure PostgreSQL)
         connection.execute(text("CREATE SCHEMA IF NOT EXISTS yoga_reserve"))
         connection.commit()
-        
+
         context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
