@@ -19,10 +19,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "start:local": "env-cmd -f .env.local react-scripts start",
-    "start:mock": "env-cmd -f .env.mock react-scripts start",
     "build": "react-scripts build",
-    "build:azure": "env-cmd -f .env.production react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
